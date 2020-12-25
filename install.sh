@@ -12,10 +12,10 @@ ensure() {
 }
 
 _cputype="$(uname -m)"
-_ostype="cc"
+_ostype="$(uname)"
 
-case "$OSTYPE" in
-  Linux | linux-gnu)
+case "$_ostype" in
+  Linux)
     _ostype=linux
     ;;
 
