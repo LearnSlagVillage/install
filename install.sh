@@ -1,15 +1,21 @@
-_ostype="$(uname -s)"
+say() {
+	printf '>>>> yomo installer: %s\n' "$1"
+}
+
+err() {
+	say "$1" >&2
+	exit 1
+}
+
+ensure() {
+	if ! "$@"; then err "command failed: $*"; fi
+}
+
 _cputype="$(uname -m)"
+_ostype="cc"
 
-if [ "$_ostype" = Darwin ] && [ "$_cputype" = i386 ]; then
-  # Darwin `uname -m` lies
-  if sysctl hw.optional.x86_64 | grep -q ': 1'; then
-    _cputype=amd64
-  fi
-fi
-
-case "$_ostype" in
-  Linux)
+case "$OSTYPE" in
+  Linux | linux-gnu)
     _ostype=linux
     ;;
 
@@ -45,30 +51,44 @@ esac
 
 _arch="${_ostype}-${_cputype}"
 
-echo $_arch
+pattern="browser_download_url(.*)${_arch}.tar.gz"
 
 pushd /tmp/
 
-echo "Start donwloading latest version YoMo ..."
+say "Start donwloading latest version YoMo ..."
 
 curl -s https://api.github.com/repos/yomorun/yomo/releases/latest \
-    | grep "browser_download_url.*tar.gz" \
-    | cut -d : -f 2,3 \
-    | tr -d \" \
-    | wget -qi -
+	| grep -E $pattern \
+	| cut -d : -f 2,3 \
+	| tr -d \" \
+	| xargs wget
 
-tarball="$(find . -iname "yomo-*darwin.tar.gz")"
-tar -xzf $tarball
+tarball="$(find . -iname "yomo-*.tar.gz")"
 
-bfile="$(find . -iname "yomo*-darwin")"
+say "tarball:$tarball"
 
-chmod +x $bfile
+ensure tar -xzf $tarball
 
-mv $bfile /usr/local/bin/yomo
+ensure rm -rf $tarball
 
-rm -f $tarball $bfile
+bfile="$(find . -iname "yomo*")"
+
+say "bfile: $bfile"
+
+chmod u+x $bfile
+
+echo "mv 1"
+ensure mv $bfile ./yomo
+mkdir -p ~/.yomo
+echo "mv 2"
+ensure mv ./yomo ~/.yomo/.
+
+rm -f yomo*
 
 popd
 
-location="$(which yomo)"
-echo "YoMo binary localtion: $location"
+echo "=============================="
+echo "YoMo binary localtion: ~/.yomo"
+echo "=============================="
+
+echo "add \"export PATH=\$PATH:~/.yomo\" to your bash or zsh"
