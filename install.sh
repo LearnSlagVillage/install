@@ -45,12 +45,14 @@ esac
 
 _arch="${_ostype}-${_cputype}"
 
+echo $_arch
+
 pushd /tmp/
 
 echo "Start donwloading latest version YoMo ..."
 
 curl -s https://api.github.com/repos/yomorun/yomo/releases/latest \
-    | grep "browser_download_url."$_arch".tar.gz" \
+    | grep "browser_download_url.*tar.gz" \
     | cut -d : -f 2,3 \
     | tr -d \" \
     | wget -qi -
